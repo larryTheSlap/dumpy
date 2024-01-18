@@ -35,7 +35,7 @@ Dumpy is an advanced kubectl plugin designed for Kubernetes administrators, prov
 
 ### Installation
 
-Dumpy exclusively supports Kubernetes clusters using the containerd runtime. To install Dumpy, download the right [release](https://https://github.com/larryTheSlap/dumpy/releases/tag/v0.1.0) for your OS  , unzip it then move the `kubectl-dumpy` binary where kubectl is located.
+Dumpy exclusively supports Kubernetes clusters using the containerd runtime. To install Dumpy, download the right [release](https://github.com/larryTheSlap/dumpy/releases/tag/v0.1.0) for your OS  , unzip it then move the `kubectl-dumpy` binary where kubectl is located.
 - Linux install :
 ```bash
 curl -L -O https://github.com/larryTheSlap/dumpy/releases/download/v0.1.0/dumpy_Linux_x86_64.tar.gz
