@@ -14,12 +14,6 @@ builds:
       - linux
       - windows
       - darwin
-    goarch:
-      - arm64
-      - arm
-      - "amd64"
-      - "386"
-
 
 archives:
   - format: tar.gz
