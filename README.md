@@ -174,6 +174,7 @@ kubectl dumpy stop <captureName> [-n captureNamespace]
 ```
 **Notes:** 
 - Dumpy captures only exists as long as the sniffers do.
+- Docker image is publicly available at [larrytheslap/dumpy]((https://hub.docker.com/r/larrytheslap/dumpy))
 - Sniffer pods will also log traffic to stdout, helpful to validate the capture setup :
 ```bash
 $ kubectl logs -n foo-ns sniffer-mycap-7181
