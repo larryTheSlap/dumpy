@@ -60,7 +60,7 @@ func (s ApiSettings) Get_PodInfo(p_name, p_namespace, p_container string) (conta
 
 func (s ApiSettings) Get_ContainerID(p *corev1.Pod, c_name string) (name, id string, err error) {
 	if len(p.Status.ContainerStatuses) == 0 {
-		return "", "", errors.New(fmt.Sprintf("target pod %s containers are down", p.Name))
+		return "", "", fmt.Errorf("target pod %s containers are down", p.Name)
 	}
 	if c_name == "" {
 		return p.Status.ContainerStatuses[0].Name,
@@ -92,8 +92,8 @@ func (s ApiSettings) Exec_k8sCommand(command, p_name, p_namespace string) (strin
 			Stderr:  true,
 			TTY:     true,
 		}, scheme.ParameterCodec)
-	exec, err := remotecommand.NewSPDYExecutor(s.RestCfg, "POST", request.URL())
-	err = exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
+	exec, _ := remotecommand.NewSPDYExecutor(s.RestCfg, "POST", request.URL())
+	err := exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
 		Stdout: buf,
 		Stderr: errBuf,
 	})

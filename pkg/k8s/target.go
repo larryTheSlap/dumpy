@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,12 +44,15 @@ func (r *T_resource) NewT_PodList(api *ApiSettings) ([]*T_pod, error) {
 		if err != nil {
 			return nil, err
 		}
+		if r.Type == "node" {
+			return []*T_pod{{NodeName: r.Name}}, nil
+		}
 		return []*T_pod{t_pod}, nil
 	}
 
 	t_labels, err := api.Get_matchLabels(r.Type, r.Name, r.Namespace)
 	if err != nil || len(t_labels.MatchLabels) == 0 {
-		return nil, errors.New(fmt.Sprintf("target resource pods not found in namespace %s", r.Namespace))
+		return nil, fmt.Errorf("target resource pods not found in namespace %s", r.Namespace)
 	}
 	return r.Get_targetPodsFromLabels(t_labels, api)
 }
@@ -81,9 +83,9 @@ func GetT_Resource(captureName, captureNamespace string, api *ApiSettings) (t *T
 		return &T_resource{}, err
 	}
 	if len(podList.Items) == 0 {
-		return &T_resource{}, errors.New(fmt.Sprintf("%s sniffers not found in namespace %s", captureName, captureNamespace))
+		return &T_resource{}, fmt.Errorf("%s sniffers not found in namespace %s", captureName, captureNamespace)
 	}
-	t = &T_resource{TargetPods: *&[]*T_pod{}}
+	t = &T_resource{TargetPods: []*T_pod{}}
 	t.Name = podList.Items[0].Labels["dumpy-target-resource"]
 	t.Namespace = podList.Items[0].Labels["dumpy-target-namespace"]
 	t.ContainerName = podList.Items[0].Labels["dumpy-target-container"]

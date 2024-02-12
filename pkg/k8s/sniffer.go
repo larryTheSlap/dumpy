@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -70,7 +69,7 @@ func (d *D_pod) Is_Ready(api *ApiSettings) error {
 		}
 		time.Sleep(2 * time.Second)
 	}
-	return errors.New(fmt.Sprintf("Retry count exceeded, %s not ready, use (kubectl describe pod %s -n %s) to troubleshoot", d.Name, d.Name, d.Namespace))
+	return fmt.Errorf("retry count exceeded, %s not ready, use (kubectl describe pod %s -n %s) to troubleshoot", d.Name, d.Name, d.Namespace)
 }
 
 func (d D_pod) Is_Completed(api *ApiSettings) error {
@@ -86,7 +85,7 @@ func (d D_pod) Is_Completed(api *ApiSettings) error {
 		}
 		time.Sleep(2 * time.Second)
 	}
-	return errors.New(fmt.Sprintf("Retry count exceeded, %s could not be stopped", d.Name))
+	return fmt.Errorf("retry count exceeded, %s could not be stopped", d.Name)
 }
 func (d D_pod) GeneratePodManifest(t *T_resource) corev1.Pod {
 	var vol []corev1.Volume

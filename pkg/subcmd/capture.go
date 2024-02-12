@@ -15,6 +15,7 @@ var (
 		"replicaset":  "rs",
 		"statefulset": "sts",
 		"pod":         "p",
+		"node":        "node",
 	}
 	captureExample = `# capture all traffic from foo pod in current namespace 
   kubectl dumpy capture pod foo
