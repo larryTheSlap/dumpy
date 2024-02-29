@@ -181,7 +181,7 @@ kubectl dumpy stop <captureName> [-n captureNamespace]
 ```
 ## Notes:
 - Dumpy captures only exists as long as the sniffers do.
-- Docker image is publicly available on dockerHub : 
+- Docker image is publicly available on [DockerHub](https://hub.docker.com/r/larrytheslap/dumpy) : 
 ```bash
 $ docker pull larrytheslap/dumpy
 ```
