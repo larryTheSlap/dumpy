@@ -40,7 +40,8 @@ Dumpy exclusively supports Kubernetes clusters using the containerd runtime, the
 ```bash
 kubectl krew install dumpy
 ```
-**2. Manual installation:** 
+**2. Manual installation:**
+
 Download the right [release](https://github.com/larryTheSlap/dumpy/releases) for your OS  , unzip it then move the `kubectl-dumpy` binary where kubectl is located.
 - linux install:
 ```bash
