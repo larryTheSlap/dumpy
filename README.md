@@ -34,9 +34,15 @@ Dumpy is an advanced kubectl plugin designed for Kubernetes administrators, prov
 ## Quick Start
 
 ### Installation
+Dumpy exclusively supports Kubernetes clusters using the containerd runtime, there are two ways to install Dumpy: 
 
-Dumpy exclusively supports Kubernetes clusters using the containerd runtime. To install Dumpy, download the right [release](https://github.com/larryTheSlap/dumpy/releases/tag/v0.1.0) for your OS  , unzip it then move the `kubectl-dumpy` binary where kubectl is located.
-- Linux install :
+**1. Using Krew:**
+```bash
+kubectl krew install dumpy
+```
+**2. Manual installation:** 
+Download the right [release](https://github.com/larryTheSlap/dumpy/releases) for your OS  , unzip it then move the `kubectl-dumpy` binary where kubectl is located.
+- linux install:
 ```bash
 curl -L -O https://github.com/larryTheSlap/dumpy/releases/download/v0.1.0/dumpy_Linux_x86_64.tar.gz
 tar xf dumpy_Linux_x86_64.tar.gz 
@@ -172,9 +178,12 @@ kubectl dumpy restart <captureName> [-n captureNamespace] [-f tcpdump filters]
 ```bash
 kubectl dumpy stop <captureName> [-n captureNamespace]
 ```
-**Notes:** 
+## Notes:
 - Dumpy captures only exists as long as the sniffers do.
-- Docker image is publicly available at [larrytheslap/dumpy](https://hub.docker.com/r/larrytheslap/dumpy)
+- Docker image is publicly available on dockerHub : 
+```bash
+$ docker pull larrytheslap/dumpy
+```
 - Sniffer pods will also log traffic to stdout, helpful to validate the capture setup :
 ```bash
 $ kubectl logs -n foo-ns sniffer-mycap-7181
