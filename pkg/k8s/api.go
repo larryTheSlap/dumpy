@@ -64,17 +64,18 @@ func (s ApiSettings) Get_ContainerID(p *corev1.Pod, c_name string) (name, id str
 	}
 	if c_name == "" {
 		return p.Status.ContainerStatuses[0].Name,
-			strings.SplitN(p.Status.ContainerStatuses[0].ContainerID, "containerd://", 2)[1],
+			strings.SplitN(p.Status.ContainerStatuses[0].ContainerID, "://", 2)[1],
 			nil
 	}
 	for _, c := range p.Status.ContainerStatuses {
 		if c_name == c.Name {
-			return c.Name, strings.SplitN(c.ContainerID, "containerd://", 2)[1], nil
+			return c.Name, strings.SplitN(c.ContainerID, "://", 2)[1], nil
 		}
 	}
 	err = errors.New("specified container not found")
 	return "", "", err
 }
+
 func (s ApiSettings) Exec_k8sCommand(command, p_name, p_namespace string) (string, string, error) {
 
 	buf := &bytes.Buffer{}
