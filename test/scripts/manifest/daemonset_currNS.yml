@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: test-ds
+  name: test-ds
+spec:
+  selector:
+    matchLabels:
+      app: test-ds
+  template:
+    metadata:
+      labels:
+        app: test-ds
+    spec:
+      containers:
+      - image: nginx:latest
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  labels:
+    app: test-rs
+  name: test-replicaset
+  namespace: test-ns
+spec:
+  replicas: 2  
+  selector:
+    matchLabels:
+      app: test-rs
+  template:
+    metadata:
+      labels:
+        app: test-rs
+    spec:
+      containers:
+      - image: nginx:latest
+        name: nginx
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
