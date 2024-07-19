@@ -76,10 +76,8 @@ func (d *Dumpy) Get_Run(args []string) (err error) {
 			if err := d.NewSniffersFromExisting(); err != nil {
 				return err
 			}
-			d.TargetResource, err = k8s.GetT_Resource(d.CaptureName, ns, d.Api)
-			if err != nil {
-				return err
-			}
+			d.TargetResource, _ = d.Api.GetT_ResourceFromCap(d.CaptureName, ns)
+
 			r_count := 0
 			for _, s := range d.Sniffers {
 				if s.Status == "Running" {
@@ -89,7 +87,7 @@ func (d *Dumpy) Get_Run(args []string) (err error) {
 			t.AddLine(d.CaptureName, d.Namespace,
 				fmt.Sprintf("%s/%s", d.TargetResource.Type, d.TargetResource.Name),
 				d.TargetResource.Namespace, d.DumpFilters,
-				fmt.Sprintf("%v/%v", r_count, len(d.TargetResource.TargetPods)),
+				fmt.Sprintf("%v/%v", r_count, len(d.TargetResource.Items)),
 			)
 		}
 		t.Print()
@@ -104,47 +102,41 @@ func (d *Dumpy) Get_Run(args []string) (err error) {
 	if len(d.Sniffers) == 0 {
 		return fmt.Errorf("%s sniffers not found in namespace %s", d.CaptureName, d.Namespace)
 	}
-	d.TargetResource, err = k8s.GetT_Resource(d.CaptureName, d.Namespace, d.Api)
+	d.TargetResource, err = d.Api.GetT_ResourceFromCap(d.CaptureName, d.Namespace)
 	if err != nil {
 		return err
 	}
-	podStr := ""
-	for _, s := range d.Sniffers {
-		s_status := s.Status
-		if s.Status == "Succeeded" {
-			s_status = "Stopped"
-		}
-		podStr += s.TargetPod.Name + "  <-----  " + s.Name + " [" + s_status + "]" + "\n        "
-	}
+	Get_Display(d)
 
-	details := "name: %s\n" +
+	return nil
+}
+func Get_Display(d *Dumpy) {
+	headSTR := "name: %s\n" +
 		"namespace: %s\n" +
 		"tcpdumpfilters: %s\n" +
 		"image: %s\n" +
-		"targetSpec:\n" +
-		"    name: %s\n" +
-		"    namespace: %s\n" +
-		"    type: %s\n" +
-		"    container: %s\n" +
-		"    items:\n" +
-		"        %s\n" +
-		"pvc: %s\n" +
-		"pullsecret: %s\n"
+		"targetSpec:\n"
+	headSTR = fmt.Sprintf(headSTR, d.CaptureName, d.Namespace, d.DumpFilters, d.Image)
 
-	fmt.Printf(
-		details,
-		d.CaptureName,
-		d.Namespace,
-		d.DumpFilters,
-		d.Image,
-		d.TargetResource.Name,
-		d.TargetResource.Namespace,
-		d.TargetResource.Type,
-		d.TargetResource.ContainerName,
-		podStr,
-		d.PvcName,
-		d.PullSecret,
-	)
+	itemStr := ""
+	for _, s := range d.Sniffers {
+		itemStr += s.Target.GetName() + "  <-----  " + s.Name + " [" + s.Status + "]\n"
+	}
 
-	return nil
+	SpecStr := ""
+	switch t := d.TargetResource.Items[0].(type) {
+	case *k8s.T_pod:
+		SpecStr = fmt.Sprintf("    name: %s\n"+
+			"    namespace: %s\n"+
+			"    type: %s\n"+
+			"    container: %s\n"+
+			"    items:\n"+
+			"        %s", t.Name, t.Namespace, d.TargetResource.Type, t.ContainerName, itemStr)
+	case *k8s.T_node:
+		SpecStr = fmt.Sprintf("    type: %s\n"+
+			"    items:\n"+
+			"        %s", d.TargetResource.Type, itemStr)
+	}
+	footStr := fmt.Sprintf("pvc: %s\npullsecret: %s\n", d.PvcName, d.PullSecret)
+	fmt.Print(headSTR, SpecStr, footStr)
 }

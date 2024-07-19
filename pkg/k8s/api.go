@@ -10,6 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -156,4 +157,46 @@ func (s ApiSettings) Delete_Pods(captureLabel metav1.ListOptions, namespace stri
 	}
 	fmt.Println("pods have been deleted")
 	return nil
+}
+
+func (s *ApiSettings) GetT_ResourceFromCap(captureName, captureNamespace string) (t *T_resource, err error) {
+	d_labels := map[string]string{"dumpy-capture": captureName}
+	list_opt := metav1.ListOptions{LabelSelector: labels.Set(d_labels).String()}
+
+	podList, err := s.Clientset.CoreV1().Pods(captureNamespace).List(context.Background(), list_opt)
+	if err != nil {
+		return &T_resource{}, err
+	}
+	if len(podList.Items) == 0 {
+		return &T_resource{}, fmt.Errorf("%s sniffers not found in namespace %s", captureName, captureNamespace)
+	}
+	t = &T_resource{
+		Name:          podList.Items[0].Labels["dumpy-target-resource"],
+		Namespace:     podList.Items[0].Labels["dumpy-target-namespace"],
+		ContainerName: podList.Items[0].Labels["dumpy-target-container"],
+		Type:          podList.Items[0].Labels["dumpy-target-type"],
+	}
+	if err := t.SetT_Items(s); err != nil {
+		return &T_resource{}, err
+	}
+	return t, nil
+}
+
+func (s ApiSettings) Check_NodeExist(n_name string) error {
+	_, err := s.Clientset.CoreV1().Nodes().Get(context.Background(), n_name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s ApiSettings) Get_Nodes() ([]corev1.Node, error) {
+	nodes, err := s.Clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return []corev1.Node{}, err
+	}
+	if len(nodes.Items) == 0 {
+		return []corev1.Node{}, errors.New("nodes not found")
+	}
+	return nodes.Items, nil
 }
