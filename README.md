@@ -2,7 +2,7 @@
 
 # Dumpy - Kubernetes Network Traffic Capture Plugin
 
-Dumpy is an advanced kubectl plugin designed for Kubernetes administrators, providing seamless network traffic capture from various resources. It excels in isolating captures to specific pod containers, ensuring security and accurate analysis. Dumpy dynamically creates dedicated sniffers that will run tcpdump for each target pod.
+Dumpy is an advanced kubectl plugin designed for Kubernetes administrators, providing seamless network traffic capture from various resources. It excels in isolating captures to specific pod containers or nodes, ensuring security and accurate analysis. Dumpy dynamically creates dedicated sniffers that will run tcpdump for each target.
 
 
 - [Features](#features)
@@ -17,7 +17,7 @@ Dumpy is an advanced kubectl plugin designed for Kubernetes administrators, prov
 
 ## Features
 
-- **Dynamic Sniffer Creation:** Optimizes resource utilization by creating a dedicated sniffer for each pod, guaranteeing accurate and unobtrusive analysis.
+- **Dynamic Sniffer Creation:** Optimizes resource utilization by creating a dedicated sniffer for each target, guaranteeing accurate and unobtrusive analysis.
 
 - **Flexible Filtering:** Apply custom TCPDump filters for fine-grained control over captured data.
 
@@ -34,7 +34,7 @@ Dumpy is an advanced kubectl plugin designed for Kubernetes administrators, prov
 ## Quick Start
 
 ### Installation
-Dumpy exclusively supports Kubernetes clusters using the containerd runtime, there are two ways to install Dumpy: 
+There are two ways to install Dumpy: 
 
 **1. Using Krew:**
 ```bash
@@ -53,13 +53,13 @@ chmod +x kubectl-dumpy && sudo mv kubectl-dumpy /usr/bin/kubectl-dumpy
 
 Deploy sniffers to capture traffic from target pods :
 ```bash
-kubectl dumpy capture <pod|deployment|replicaset|daemonset|statefulset> <resourceName> \
+kubectl dumpy capture <pod|deployment|replicaset|daemonset|statefulset|node> <resourceName> \
   -n <captureNamespace>      \ # Namespace where dumpy sniffers will be deployed           (default: current namespace) 
   -t <targetNamespace>       \ # Target resource namespace                                 (default: captureNamespace)
   -f <tcpdumpFilters>        \ # Tcpdump filters for capture                               (default: "-i any")
   -c <containerName>         \ # Specific target container for multi-container pods        (default: Main container)
   -v <pvcName>               \ # PVC name that sniffers mount to store tcpdump captures, RWX PVC for mutli-pod
-  -i <dumpyImage>            \ # Dumpy docker image for private clusters                   (default: larrytheslap/dumpy:latest) 
+  -i <dumpyImage>            \ # Dumpy docker image for private clusters                   (default: larrytheslap/dumpy:0.2.0) 
   -s <imagePullSecret>       \ # Image pull secret name for private clusters to pull dumpy image
   --name <captureName>       \ # Set specific capture name, if not set dumpy generates it  (default: dumpy-<ID>) 
 
@@ -118,6 +118,10 @@ Flag usage :
   kubectl dumpy capture deploy foo-deploy -i <repository>/<path>/dumpy:latest -s <secretName>
 # set pvc volume [RWX for multiple sniffers] to store tcpdump captures
   kubectl dumpy capture daemonset foo-ds -v <pvcName>
+# capture traffic from node worker-node
+  kubectl dumpy capture node worker-node
+# capture traffic from all nodes
+  kubectl dumpy capture node all
 ```
 
 ### Capture Details
@@ -129,7 +133,8 @@ NAME            NAMESPACE  TARGET                   TARGETNAMESPACE  TCPDUMPFILT
 dumpy-51994723  foo-ns     pod/p-test-2             foo-ns           -i any host 10.0.0.13 and port 443  1/1
 dumpy-80508655  foo-ns     deployment/bar-deploy    foo-ns           -i any port 443                     3/3
 mycap           foo-ns     pod/p-test-1             foo-ns           -i any                              1/1
-dumpy-49366665  foo-ns     deployment/nginx-deploy  foo-ns           -i any port 80                      3/3 
+dumpy-49366665  foo-ns     deployment/nginx-deploy  foo-ns           -i any port 80                      3/3
+cap-node        foo-ns     node/worker-node                          -i any                              1/1
 ```
 It is also possible to get more details about a specific capture by adding the capture name :
 ```bash
@@ -139,7 +144,7 @@ Getting capture details..
 name: dumpy-80508655
 namespace: foo-ns
 tcpdumpfilters: -i any port 443
-image: larrytheslap/dumpy:latest
+image: larrytheslap/dumpy:0.2.0
 targetSpec:
     name: bar-deploy
     namespace: foo-ns
@@ -185,6 +190,7 @@ kubectl dumpy stop <captureName> [-n captureNamespace]
 ```bash
 $ docker pull larrytheslap/dumpy
 ```
+- Dumpy support all kubernetes clusters with runtimes: `[containerd, docker, crio]`
 - Sniffer pods will also log traffic to stdout, helpful to validate the capture setup :
 ```bash
 $ kubectl logs -n foo-ns sniffer-mycap-7181

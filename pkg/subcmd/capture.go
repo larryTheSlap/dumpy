@@ -31,6 +31,10 @@ var (
   kubectl dumpy capture deploy foo-deploy -i <repository>/<path>/dumpy:latest -s <secretName>
 # set pvc volume [RWX for multiple sniffers] to store tcpdump captures
   kubectl dumpy capture daemonset foo-ds -v <pvcName>
+# capture traffic from node worker-node
+  kubectl dumpy capture node worker-node
+# capture traffic from all nodes
+  kubectl dumpy capture node all
 	`
 )
 
