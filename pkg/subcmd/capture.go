@@ -31,6 +31,10 @@ var (
   kubectl dumpy capture deploy foo-deploy -i <repository>/<path>/dumpy:latest -s <secretName>
 # set pvc volume [RWX for multiple sniffers] to store tcpdump captures
   kubectl dumpy capture daemonset foo-ds -v <pvcName>
+# capture traffic from node worker-node
+  kubectl dumpy capture node worker-node
+# capture traffic from all nodes
+  kubectl dumpy capture node all
 	`
 )
 
@@ -64,7 +68,7 @@ func Dumpysubcmd_capture() (cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&dumpy.DumpFilters, "filter", "f", "-i any", "tcpdump filters/arguments")
 	cmd.Flags().StringVarP(&dumpy.PvcName, "pvc", "v", "", "pvc name for dumpy sniffers to store network captures")
 	cmd.Flags().StringVarP(&dumpy.PullSecret, "secret", "s", "", "dumpy sniffer image pull secret")
-	cmd.Flags().StringVarP(&dumpy.Image, "image", "i", "larrytheslap/dumpy:latest", "dumpy sniffer docker image")
+	cmd.Flags().StringVarP(&dumpy.Image, "image", "i", "larrytheslap/dumpy:0.2.0", "dumpy sniffer docker image")
 
 	return
 }
@@ -96,6 +100,9 @@ func (d *Dumpy) Capture_Validate(cmd *cobra.Command, args []string) error {
 	if len(args) < 2 {
 		return errors.New("not enough arguments, use -h for help")
 	}
+	if len(args) > 2 {
+		return errors.New("too many arguments, use -h for help")
+	}
 	d.TargetResource.Type = args[0]
 	d.TargetResource.Name = args[1]
 
@@ -116,8 +123,7 @@ func (d *Dumpy) Capture_Validate(cmd *cobra.Command, args []string) error {
 func (d *Dumpy) Capture_Run(cmd *cobra.Command, args []string) (err error) {
 
 	fmt.Println("Getting target resource info..")
-	d.TargetResource.TargetPods, err = d.TargetResource.NewT_PodList(d.Api)
-	if err != nil {
+	if err = d.TargetResource.SetT_Items(d.Api); err != nil {
 		return err
 	}
 

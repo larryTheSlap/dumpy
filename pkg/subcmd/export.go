@@ -92,10 +92,10 @@ func (d *Dumpy) Export_Run(args []string, cmd *cobra.Command, f cmdutil.Factory,
 
 	fmt.Println("Downloading capture dumps from sniffers:")
 	for _, s := range d.Sniffers {
-		pcapName := fmt.Sprintf("%s-%s.pcap", d.CaptureName, s.TargetPod.Name)
+		pcapName := fmt.Sprintf("%s-%s.pcap", d.CaptureName, s.Target.GetName())
 		args[0] = fmt.Sprintf("%s:/tmp/dumpy/%s", s.Name, pcapName)
 		args[1] = fmt.Sprintf("%s/%s", destPath, pcapName)
-		fmt.Printf("  %s ---> path %s\n", s.TargetPod.Name, args[1])
+		fmt.Printf("  %s ---> path %s\n", s.Target.GetName(), args[1])
 		cmdutil.CheckErr(copyOption.Complete(f, cmd, args))
 		copyOption.Namespace = d.Namespace
 		cmdutil.CheckErr(copyOption.Run())

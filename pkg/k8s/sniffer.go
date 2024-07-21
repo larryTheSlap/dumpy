@@ -13,7 +13,7 @@ import (
 type D_pod struct {
 	Name        string
 	Namespace   string
-	TargetPod   *T_pod
+	Target      Target
 	CaptureName string
 	DumpFilters string
 	Status      string
@@ -22,10 +22,10 @@ type D_pod struct {
 	Image       string
 }
 
-func NewD_Pod(n, c string, t *T_pod, f, v, s, i string) *D_pod {
+func NewD_Pod(n, c string, t Target, f, v, s, i string) *D_pod {
 	return &D_pod{
 		Name:        n,
-		TargetPod:   t,
+		Target:      t,
 		CaptureName: c,
 		DumpFilters: f,
 		Status:      "Init",
@@ -39,12 +39,7 @@ func (d D_pod) Run(api *ApiSettings, t *T_resource) error {
 
 	podManifest := d.GeneratePodManifest(t)
 
-	fmt.Printf("\n  PodName: %s\n  ContainerName: %s\n  ContainerID: %s\n  NodeName: %s\n\n",
-		d.TargetPod.Name,
-		d.TargetPod.ContainerName,
-		d.TargetPod.ContainerID,
-		d.TargetPod.NodeName,
-	)
+	d.Target.ShowDetails()
 
 	_, err := api.Clientset.CoreV1().Pods(d.Namespace).Create(context.Background(), &podManifest, metav1.CreateOptions{})
 	if err != nil {
@@ -117,19 +112,21 @@ func (d D_pod) GeneratePodManifest(t *T_resource) corev1.Pod {
 		Kind:       "Pod",
 		APIVersion: "v1",
 	}
+
+	d_labels := map[string]string{
+		"app":                   "dumpy-kubectl-plugin",
+		"component":             "dumpy-sniffer",
+		"dumpy-capture":         d.CaptureName,
+		"dumpy-target-resource": t.Name,
+		"dumpy-target-type":     t.Type,
+	}
+	for key, value := range d.Target.GetManifestLabels() {
+		d_labels[key] = value
+	}
 	objectMetadata := metav1.ObjectMeta{
 		Name:      d.Name,
 		Namespace: d.Namespace,
-		Labels: map[string]string{
-			"app":                    "dumpy-kubectl-plugin",
-			"component":              "dumpy-sniffer",
-			"dumpy-target-pod":       d.TargetPod.Name,
-			"dumpy-target-container": d.TargetPod.ContainerName,
-			"dumpy-target-namespace": d.TargetPod.Namespace,
-			"dumpy-capture":          d.CaptureName,
-			"dumpy-target-resource":  t.Name,
-			"dumpy-target-type":      t.Type,
-		},
+		Labels:    d_labels,
 	}
 
 	privileged_flag := new(bool)
@@ -138,31 +135,30 @@ func (d D_pod) GeneratePodManifest(t *T_resource) corev1.Pod {
 	*privileged_flag = true
 	*pathType = corev1.HostPathType("Directory")
 
+	shared_env := []corev1.EnvVar{
+		{
+			Name:  "CAPTURE_NAME",
+			Value: d.CaptureName,
+		},
+		{
+			Name:  "DUMPY_TARGET_TYPE",
+			Value: t.Type,
+		},
+	}
+
 	podSpec := corev1.PodSpec{
 		RestartPolicy:    "Never",
-		NodeName:         d.TargetPod.NodeName,
+		NodeName:         d.Target.GetNodeName(),
 		HostPID:          true,
 		Volumes:          vol,
 		ImagePullSecrets: secret,
 		Containers: []corev1.Container{{
 			Image:           d.Image,
+			ImagePullPolicy: "IfNotPresent",
 			Name:            "dumpy-container",
 			SecurityContext: &corev1.SecurityContext{Privileged: privileged_flag},
-			Env: []corev1.EnvVar{
-				{
-					Name:  "TARGET_CONTAINERID",
-					Value: d.TargetPod.ContainerID,
-				},
-				{
-					Name:  "TARGET_POD",
-					Value: d.TargetPod.Name,
-				},
-				{
-					Name:  "CAPTURE_NAME",
-					Value: d.CaptureName,
-				},
-			},
-			Command: []string{"./dumpy_sniff.sh", d.DumpFilters},
+			Env:             append(shared_env, d.Target.GetEnvVar()...),
+			Command:         []string{"./dumpy_sniff.sh", d.DumpFilters},
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      "dumpy-tmp-vol",

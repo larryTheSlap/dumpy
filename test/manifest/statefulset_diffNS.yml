@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-svc
+  namespace: test-ns
+  labels:
+    app: test-sts
+spec:
+  ports:
+  - port: 80
+  clusterIP: None
+  selector:
+    app: test-sts
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: test-sts
+  namespace: test-ns
+spec:
+  serviceName: test-svc
+  replicas: 2
+  selector:
+    matchLabels:
+      app: test-sts
+  template:
+    metadata:
+      labels:
+        app: test-sts
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+

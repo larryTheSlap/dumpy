@@ -1,7 +1,6 @@
 package subcmd
 
 import (
-	"dumpy/pkg/k8s"
 	"errors"
 	"fmt"
 
@@ -79,7 +78,7 @@ func (d *Dumpy) Restart_Run(args []string) (err error) {
 	if len(to_del) == 0 {
 		return fmt.Errorf("%s sniffers not found in namespace %s", d.CaptureName, d.Namespace)
 	}
-	d.TargetResource, err = k8s.GetT_Resource(d.CaptureName, to_del[0].Namespace, d.Api)
+	d.TargetResource, err = d.Api.GetT_ResourceFromCap(d.CaptureName, to_del[0].Namespace)
 	if err != nil {
 		return err
 	}

@@ -35,7 +35,7 @@ func NewDumpy() *Dumpy {
 
 func (d *Dumpy) NewSniffers() {
 	d.Sniffers = nil
-	for _, t := range d.TargetResource.TargetPods {
+	for _, t := range d.TargetResource.Items {
 		s_name := fmt.Sprintf("sniffer-%s-%s", d.CaptureName, utils.GenerateRandomID(4))
 		newSniffer := k8s.NewD_Pod(s_name, d.CaptureName, t, d.DumpFilters, d.PvcName, d.PullSecret, d.Image)
 		newSniffer.Namespace = d.Namespace
@@ -68,14 +68,22 @@ func (d *Dumpy) NewSniffersFromExisting() error {
 	}
 	d.DumpFilters = podList.Items[0].Spec.Containers[0].Command[1]
 	for _, p := range podList.Items {
-		t := &k8s.T_pod{
-			Name:          p.Labels["dumpy-target-pod"],
-			Namespace:     p.Labels["dumpy-target-namespace"],
-			ContainerName: p.Labels["dumpy-target-container"],
+		var t k8s.Target
+		if p.Labels["dumpy-target-type"] == "node" {
+			t = &k8s.T_node{Name: p.Labels["dumpy-target-node"]}
+		} else {
+			t = &k8s.T_pod{
+				Name:          p.Labels["dumpy-target-pod"],
+				Namespace:     p.Labels["dumpy-target-namespace"],
+				ContainerName: p.Labels["dumpy-target-container"],
+			}
 		}
 		newSniffer := k8s.NewD_Pod(p.Name, d.CaptureName, t, p.Spec.Containers[0].Command[1], d.PvcName, d.PullSecret, d.Image)
 		newSniffer.Namespace = p.Namespace
 		newSniffer.Status = string(p.Status.Phase)
+		if newSniffer.Status == "Succeeded" {
+			newSniffer.Status = "Stopped"
+		}
 		d.Sniffers = append(d.Sniffers, newSniffer)
 	}
 	return nil
@@ -90,7 +98,7 @@ func (d Dumpy) GetCaptures() (map[string]string, error) {
 		return nil, err
 	}
 	if len(podList.Items) == 0 {
-		return nil, errors.New("no captures found")
+		return nil, fmt.Errorf("no captures found in namespace %s", d.Namespace)
 	}
 	captures := make(map[string]string)
 	var exist bool

@@ -1,7 +1,6 @@
 #!/bin/bash
 
-cat dumpy_ASCII.txt
-echo -e ""
+cat dumpy_ASCII.txt ; echo -e ""
 
 TCPDUMPFILTERS=$1
 LOG_INFO="[INFO] ####"
@@ -9,59 +8,72 @@ LOG_ERR="[ERR] ####"
 LOG_OK="[SUCCESS] ####"
 LOG_WARN="[WARN] ####"
 
-# GET CONTAINERD CLI BINARY PATH
-check_containerd_bin() {
-    commands=("crictl" "nerdctl" "ctr")
+# RUN TCPDUMP ON TARGET PODS||NODES
+if [[ $DUMPY_TARGET_TYPE == "node" ]]
+then
+    echo "$LOG_INFO starting capture on target node $TARGET_NODE .." 
+    nsenter -t 1 -n tcpdump $TCPDUMPFILTERS -w - | tee /tmp/dumpy/${CAPTURE_NAME}-${TARGET_NODE}.pcap | tcpdump -r - &
+    TCPDUMP_PID=$!        
+else
+    # GET CONTAINER CLI BINARIES PATHS
+    commands=("crictl" "nerdctl" "ctr" "docker")
     for binary in "${commands[@]}"
     do
         if [[ $(nsenter -t 1 -m -n ls /usr/local/bin | grep $binary) != "" ]]; then
-            echo "/usr/local/bin/$binary"
-            return 0
+            BIN_PATH_LIST+=("/usr/local/bin/$binary")
         elif [[ $(nsenter -t 1 -m -n ls /usr/bin | grep $binary) != "" ]]; then
-            echo "/usr/bin/$binary"
-            return 0
+            BIN_PATH_LIST+=("/usr/bin/$binary")
         fi
     done
-    echo "containerd cli not found, tried [crictl, nerdctl, ctr]"
-    return 1
-}
+    if [[ -z "$BIN_PATH_LIST" ]]; then
+        echo "container cli not found, tried [crictl, nerdctl, ctr, docker]"
+        exit 1
+    fi
 
-if BINPATH=$(check_containerd_bin) 
+    # GET TARGET CONTAINER PID FROM BIN INSPECT
+    echo "$LOG_INFO target container ID: $TARGET_CONTAINERID"
+    for BINPATH in "${BIN_PATH_LIST[@]}"
+    do
+        BIN=$(echo $BINPATH | awk -F '/' '{print $NF}')
+        echo "$LOG_INFO trying container cli : $BIN"
+        if [[ $BIN == "crictl" ]]
+        then
+            TARGET_PID=$(nsenter -t 1 -m -n $BINPATH inspect $TARGET_CONTAINERID | jq .info.pid)
+        elif [[ $BIN == "nerdctl" || $BIN == "docker" ]]
+        then
+            TARGET_PID=$(nsenter -t 1 -m -n $BINPATH  inspect $TARGET_CONTAINERID | jq .[0].State.Pid)
+        elif [[ $BIN == "ctr" ]]
+        then
+            TARGET_PID=$(nsenter -t 1 -m -n $BINPATH container info $TARGET_CONTAINERID --format=json | jq -r '.info.State.Pid')
+        fi
+        
+        if [[ "$TARGET_PID" =~ ^[0-9]+$ ]]
+        then 
+            echo "$LOG_INFO target container PID : $TARGET_PID"
+            break
+        fi
+            
+    done
+    if [[ ! "$TARGET_PID" =~ ^[0-9]+$ ]]
+    then 
+        echo "$LOG_ERR No PID found for target container"
+        exit 1
+    fi
+
+    # RUN TCPDUMP IN PID NAMESPACE
+    echo "$LOG_INFO starting capture on target pod $TARGET_POD .." 
+    nsenter -t $TARGET_PID -n tcpdump $TCPDUMPFILTERS -w - | tee /tmp/dumpy/${CAPTURE_NAME}-${TARGET_POD}.pcap | tcpdump -r - &
+    TCPDUMP_PID=$!
+fi
+
+# CHECK TCPDUMP PROCESS
+if [[ "$TCPDUMP_PID" =~ ^[0-9]+$ ]]
 then
-    echo "$LOG_INFO using bin $BINPATH"
+    echo "$LOG_INFO sniffer tcpdump PID: $TCPDUMP_PID"
 else
+    echo "$LOG_ERR Dumpy sniffer failed to run Tcpdump on target, terminating.."
     exit 1
 fi
-
-BIN=$(echo $BINPATH | awk -F '/' '{print $NF}')
-# GET TARGET CONTAINER PID FROM CRICTL INSEPCT
-if [[ $BIN == "crictl" ]]
-then
-    TARGET_PID=$(nsenter -t 1 -m -n $BINPATH inspect $TARGET_CONTAINERID | jq .info.pid)
-elif [[ $BIN == "nerdctl" ]]
-then
-    TARGET_PID=$(nsenter -t 1 -m -n $BINPATH  inspect $TARGET_CONTAINERID | jq .[0].State.Pid)
-elif [[ $BIN == "ctr" ]]
-then
-    TARGET_PID=$(nsenter -t 1 -m -n $BINPATH container info $TARGET_CONTAINERID --format=json | jq -r '.info.State.Pid')
-else
-    echo "$LOG_ERR could not get target pid of target container"
-fi
-
-if [[ $TARGET_PID = "" ]]
-then
-    echo "$LOG_WARN No PID found for target container"
-    exit 1
-
-fi
-
-printf "\n$LOG_INFO target container PID : $TARGET_PID\n"
-
-# RUN TCPDUMP IN PID NAMESPACE
-echo "$LOG_INFO starting capture on target pod.." 
-nsenter -t $TARGET_PID -n tcpdump $TCPDUMPFILTERS -w - | tee /tmp/dumpy/${CAPTURE_NAME}-${TARGET_POD}.pcap | tcpdump -r - &
-TCPDUMP_PID=$!
-echo "$LOG_INFO Dumpy sniffer PID: $TCPDUMP_PID"
 
 # INIT DUMPY STATUS FILES
 TERMINATION_FILE="/tmp/dumpy/termination_flag"
@@ -77,7 +89,7 @@ do
     then
         if [[ $RETRY_COUNT == 0 ]]
         then
-            echo "network Capture failed to initiate, terminating sniffer..."
+            echo "$LOG_ERR network capture failed to initiate, terminating sniffer..."
             exit 1
         fi
         echo "$LOG_INFO network capture has been interrupted, waiting for SIGTERM..."
