@@ -64,16 +64,32 @@ func (s ApiSettings) Get_ContainerID(p *corev1.Pod, c_name string) (name, id str
 		return "", "", fmt.Errorf("target pod %s containers are down", p.Name)
 	}
 	if c_name == "" {
-		return p.Status.ContainerStatuses[0].Name,
-			strings.SplitN(p.Status.ContainerStatuses[0].ContainerID, "containerd://", 2)[1],
-			nil
+		if p.Status.ContainerStatuses[0].ContainerID == "" {
+			return "", "", fmt.Errorf("could not retrieve containerID for pod %s, container name: %s", p.Name, p.Status.ContainerStatuses[0].Name)
+		}
+		if strings.Contains(p.Status.ContainerStatuses[0].ContainerID, "://") {
+			return p.Status.ContainerStatuses[0].Name,
+				strings.SplitN(p.Status.ContainerStatuses[0].ContainerID, "://", 2)[1],
+				nil
+		} else {
+			return p.Status.ContainerStatuses[0].Name,
+				p.Status.ContainerStatuses[0].ContainerID,
+				nil
+		}
 	}
 	for _, c := range p.Status.ContainerStatuses {
 		if c_name == c.Name {
-			return c.Name, strings.SplitN(c.ContainerID, "containerd://", 2)[1], nil
+			if c.ContainerID == "" {
+				return "", "", fmt.Errorf("could not retrieve containerID for pod %s , container name: %s", p.Name, c.Name)
+			}
+			if strings.Contains(c.ContainerID, "://") {
+				return c.Name, strings.SplitN(c.ContainerID, "://", 2)[1], nil
+			} else {
+				return c.Name, c.ContainerID, nil
+			}
 		}
 	}
-	err = errors.New("specified container not found")
+	err = fmt.Errorf("could not retrieve containerID for pod %s, container name: %s", p.Name, c_name)
 	return "", "", err
 }
 func (s ApiSettings) Exec_k8sCommand(command, p_name, p_namespace string) (string, string, error) {

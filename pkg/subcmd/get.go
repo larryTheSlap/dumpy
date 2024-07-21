@@ -120,7 +120,7 @@ func Get_Display(d *Dumpy) {
 
 	itemStr := ""
 	for _, s := range d.Sniffers {
-		itemStr += s.Target.GetName() + "  <-----  " + s.Name + " [" + s.Status + "]\n"
+		itemStr += "        " + s.Target.GetName() + "  <-----  " + s.Name + " [" + s.Status + "]\n"
 	}
 
 	SpecStr := ""
@@ -131,11 +131,11 @@ func Get_Display(d *Dumpy) {
 			"    type: %s\n"+
 			"    container: %s\n"+
 			"    items:\n"+
-			"        %s", t.Name, t.Namespace, d.TargetResource.Type, t.ContainerName, itemStr)
+			"%s", d.TargetResource.Name, t.Namespace, d.TargetResource.Type, t.ContainerName, itemStr)
 	case *k8s.T_node:
 		SpecStr = fmt.Sprintf("    type: %s\n"+
 			"    items:\n"+
-			"        %s", d.TargetResource.Type, itemStr)
+			"%s", d.TargetResource.Type, itemStr)
 	}
 	footStr := fmt.Sprintf("pvc: %s\npullsecret: %s\n", d.PvcName, d.PullSecret)
 	fmt.Print(headSTR, SpecStr, footStr)
