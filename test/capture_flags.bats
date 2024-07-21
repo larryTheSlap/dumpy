@@ -1,8 +1,8 @@
 setup_file() {  
     PROJECT_ROOT="$( cd "$( dirname "$BATS_TEST_FILENAME" )/.." >/dev/null 2>&1 && pwd )"
-    PATH="$PROJECT_ROOT/test/scripts:$PATH"
+    PATH="$PROJECT_ROOT/test:$PATH"
 
-    export MANIFEST_PATH=$PROJECT_ROOT/test/scripts/manifest
+    export MANIFEST_PATH=$PROJECT_ROOT/test/manifest
     export CAP_NAME="test-capture"
     export NAMESPACE="test-ns"
 
@@ -35,7 +35,7 @@ teardown_file() {
 }
 
 
-# TEST BUNDLE | CAPTURE MUTLIPLE NS CONFIGURATIONS
+# CAPTURE MUTLIPLE NS CONFIGURATIONS
 @test "capture pod multiple ns configurations ==> target | sniffer curr ns" {
     run kubectl dumpy capture --name ${CAP_NAME} pod test-pod
     assert_output --partial 'All dumpy sniffers are Ready.'
@@ -56,28 +56,28 @@ teardown_file() {
     assert_output --partial 'All dumpy sniffers are Ready.'
 }  
 
-# TEST BUNDLE | CAPTURE SPECIFIC CONTAINER
+# CAPTURE SPECIFIC CONTAINER
 @test "capture pod specific container ==> target container name nginx-container" {
     kubectl dumpy capture --name ${CAP_NAME}-container pod test-pod -c nginx-container
     run kubectl dumpy get ${CAP_NAME}-container
     assert_output --partial 'container: nginx-container'
 }  
 
-# TEST BUNDLE | CAPTURE SPECIFIC IMAGE
+# APTURE SPECIFIC IMAGE
 @test "capture pod specific dumpy image ==> image larrytheslap/dumpy:0.1.0" {
     kubectl dumpy capture --name ${CAP_NAME}-image pod test-pod -i larrytheslap/dumpy:0.1.0
     run kubectl dumpy get ${CAP_NAME}-image
     assert_output --partial 'image: larrytheslap/dumpy:0.1.0'
 } 
 
-# TEST BUNDLE | CAPTURE PVC MOUNT
+# CAPTURE PVC MOUNT
 @test "capture pod with pvc mount ==> pvc name test-pvc" {
     kubectl dumpy capture --name ${CAP_NAME}-pvc pod test-pod -v test-pvc
     run kubectl dumpy get ${CAP_NAME}-pvc
     assert_output --partial 'pvc: test-pvc'
 } 
 
-# TEST BUNDLE | CAPTURE REGISTRY SECRET
+# CAPTURE REGISTRY SECRET
 @test "capture pod with registry secret ==> secret name test-secret" {
     kubectl dumpy capture --name ${CAP_NAME}-secret pod test-pod -s test-secret
     run kubectl dumpy get ${CAP_NAME}-secret

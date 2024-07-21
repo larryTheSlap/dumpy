@@ -1,16 +1,18 @@
 setup_file() {  
     PROJECT_ROOT="$( cd "$( dirname "$BATS_TEST_FILENAME" )/.." >/dev/null 2>&1 && pwd )"
-    PATH="$PROJECT_ROOT/test/scripts:$PATH"
+    PATH="$PROJECT_ROOT/test:$PATH"
 
-    export MANIFEST_PATH=$PROJECT_ROOT/test/scripts/manifest
+    export MANIFEST_PATH=$PROJECT_ROOT/test/manifest
     export CAP_NAME="test-get"
+    export IMG_VER="0.2.0"
 
     kubectl apply -f $MANIFEST_PATH/pod_currNS.yml
     kubectl apply -f $MANIFEST_PATH/deploy_currNS.yml
-    sleep 5
+    sleep 10
     kubectl dumpy capture --name ${CAP_NAME}-pod pod test-pod
     kubectl dumpy capture --name ${CAP_NAME}-deploy deploy test-deploy
-    kubectl dumpy capture --name ${CAP_NAME}-node node kind-worker
+    export RND_NODE=$(kubectl get node --no-headers | awk '{print $1}' | tac | head -n 1)
+    kubectl dumpy capture --name ${CAP_NAME}-node node ${RND_NODE}
     sleep 5
 }
 
@@ -29,22 +31,12 @@ teardown_file() {
 
 # GET LIST ALL CAPTURES
 @test "get all captures in current namespace" {
-    actual=$(kubectl dumpy get | tr '\n' ' ')
-    expected=$(cat <<EOF | tr '\n' ' '
-NAME             NAMESPACE  TARGET                  TARGETNAMESPACE  TCPDUMPFILTERS  SNIFFERS
-----             ---------  ------                  ---------------  --------------  --------
-test-get-deploy  foo-ns     deployment/test-deploy  foo-ns           -i any          2/2
-test-get-node    foo-ns     node/kind-worker                         -i any          1/1
-test-get-pod     foo-ns     pod/test-pod            foo-ns           -i any          1/1
-EOF
-    )
-    if [[ $actual == $expected ]]; then
-        run bash -c "echo 'get output match'; exit 0"
-
-    else
-        run bash -c "echo 'wrong get output'; exit 1"
-    fi
-    assert_success
+    run kubectl dumpy get
+    assert_output --partial 'NAME             NAMESPACE  TARGET                  TARGETNAMESPACE  TCPDUMPFILTERS  SNIFFERS'
+    assert_output --partial '----             ---------  ------                  ---------------  --------------  --------'
+    assert_output --partial 'test-get-deploy  default    deployment/test-deploy  default          -i any          2/2'
+    assert_output --partial 'test-get-node    default    node/'"${RND_NODE}"'                        -i any          1/1'
+    assert_output --partial 'test-get-pod     default    pod/test-pod            default          -i any          1/1'
 }  
 
 # GET POD CAPTURE
@@ -56,16 +48,80 @@ EOF
 Getting capture details..
 
 name: ${CAP_NAME}-pod
-namespace: foo-ns
+namespace: default
 tcpdumpfilters: -i any
-image: larrytheslap/dumpy:0.2.0
+image: larrytheslap/dumpy:${IMG_VER}
 targetSpec:
     name: test-pod
-    namespace: foo-ns
+    namespace: default
     type: pod
     container: nginx-container
     items:
         test-pod  <-----  ${sniff_pod} [Running]
+pvc: 
+pullsecret: 
+EOF
+    )
+    if [[ "$actual" == "$expected" ]]; then
+        run bash -c "echo -e 'actual: ${actual}\nexpect: ${expected}' ; exit 0"
+
+    else
+        run bash -c "echo -e 'actual: ${actual}\nexpect: ${expected}'; exit 1"
+    fi
+    assert_success
+}  
+
+# GET DEPLOY CAPTURE
+@test "get deploy capture" {
+    read sniff_pod1 sniff_pod2 <<<$(kubectl get pod -l dumpy-capture=${CAP_NAME}-deploy --no-headers | awk '{print $1}' | tr '\n' ' ')
+    target_pod1=$(kubectl get pod $sniff_pod1 -o yaml | grep dumpy-target-pod: | awk '{print $2}')
+    target_pod2=$(kubectl get pod $sniff_pod2 -o yaml | grep dumpy-target-pod: | awk '{print $2}')
+    actual=$(kubectl dumpy get test-get-deploy)
+
+    expected=$(cat <<EOF
+Getting capture details..
+
+name: ${CAP_NAME}-deploy
+namespace: default
+tcpdumpfilters: -i any
+image: larrytheslap/dumpy:${IMG_VER}
+targetSpec:
+    name: test-deploy
+    namespace: default
+    type: deployment
+    container: nginx
+    items:
+        ${target_pod1}  <-----  ${sniff_pod1} [Running]
+        ${target_pod2}  <-----  ${sniff_pod2} [Running]
+pvc: 
+pullsecret: 
+EOF
+    )
+    if [[ "$actual" == "$expected" ]]; then
+        run bash -c "echo -e 'actual: ${actual}\nexpect: ${expected}' ; exit 0"
+
+    else
+        run bash -c "echo -e 'actual: ${actual}\nexpect: ${expected}'; exit 1"
+    fi
+    assert_success
+}  
+
+# GET NODE CAPTURE
+@test "get node capture" {
+    sniff_pod=$(kubectl get pod -l dumpy-capture=${CAP_NAME}-node --no-headers | awk '{print $1}')
+    actual=$(kubectl dumpy get test-get-node)
+
+    expected=$(cat <<EOF
+Getting capture details..
+
+name: ${CAP_NAME}-node
+namespace: default
+tcpdumpfilters: -i any
+image: larrytheslap/dumpy:${IMG_VER}
+targetSpec:
+    type: node
+    items:
+        ${RND_NODE}  <-----  ${sniff_pod} [Running]
 pvc: 
 pullsecret: 
 EOF

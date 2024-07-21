@@ -1,6 +1,6 @@
 setup_file() {  
     PROJECT_ROOT="$( cd "$( dirname "$BATS_TEST_FILENAME" )/.." >/dev/null 2>&1 && pwd )"
-    PATH="$PROJECT_ROOT/test/scripts:$PATH"
+    PATH="$PROJECT_ROOT/test:$PATH"
 
     export CAP_NAME="test-capture"
 }

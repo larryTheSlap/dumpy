@@ -1,15 +1,15 @@
 setup_file() {  
     PROJECT_ROOT="$( cd "$( dirname "$BATS_TEST_FILENAME" )/.." >/dev/null 2>&1 && pwd )"
-    PATH="$PROJECT_ROOT/test/scripts:$PATH"
+    PATH="$PROJECT_ROOT/test:$PATH"
 
-    export MANIFEST_PATH=$PROJECT_ROOT/test/scripts/manifest
+    export MANIFEST_PATH=$PROJECT_ROOT/test/manifest
     export CAP_NAME="test-capture"
 
     kubectl apply -f $MANIFEST_PATH/deploy_currNS.yml
     kubectl apply -f $MANIFEST_PATH/daemonset_currNS.yml
     kubectl apply -f $MANIFEST_PATH/replicaset_currNS.yml
     kubectl apply -f $MANIFEST_PATH/statefulset_currNS.yml
-    sleep 5
+    sleep 20
 }
 
 setup () {
@@ -53,8 +53,9 @@ teardown_file() {
 }  
 
 # CAPTURE NODE
-@test "capture node ==> node name kind-worker" {
-    run kubectl dumpy capture --name ${CAP_NAME} node kind-worker
+@test "capture node" {
+    RND_NODE=$(kubectl get node --no-headers | awk '{print $1}' | tac | head -n 1)
+    run kubectl dumpy capture --name ${CAP_NAME} node $RND_NODE
     assert_output --partial 'All dumpy sniffers are Ready.'
 }  
 

@@ -1,8 +1,8 @@
 setup_file() {  
     PROJECT_ROOT="$( cd "$( dirname "$BATS_TEST_FILENAME" )/.." >/dev/null 2>&1 && pwd )"
-    PATH="$PROJECT_ROOT/test/scripts:$PATH"
+    PATH="$PROJECT_ROOT/test:$PATH"
 
-    export MANIFEST_PATH=$PROJECT_ROOT/test/scripts/manifest
+    export MANIFEST_PATH=$PROJECT_ROOT/test/manifest
     export CAP_NAME="test-export"
 
     kubectl apply -f $MANIFEST_PATH/pod_currNS.yml
@@ -41,8 +41,9 @@ teardown_file() {
 }  
 
 # EXPORT NODE CAPTURE
-@test "export node capture ==> node name kind-worker" {
-    kubectl dumpy capture --name ${CAP_NAME} node kind-worker
+@test "export node capture" {
+    RND_NODE=$(kubectl get node --no-headers | awk '{print $1}' | tac | head -n 1)
+    kubectl dumpy capture --name ${CAP_NAME} node $RND_NODE
     run kubectl dumpy export ${CAP_NAME} /tmp/dumps
-    assert_output --partial 'kind-worker ---> path /tmp/dumps/'"${CAP_NAME}"'-kind-worker.pcap'
+    assert_output --partial ''"${RND_NODE}"' ---> path /tmp/dumps/'"${CAP_NAME}"'-'"${RND_NODE}"'.pcap'
 }  

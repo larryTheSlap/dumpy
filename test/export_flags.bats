@@ -1,8 +1,8 @@
 setup_file() {  
     PROJECT_ROOT="$( cd "$( dirname "$BATS_TEST_FILENAME" )/.." >/dev/null 2>&1 && pwd )"
-    PATH="$PROJECT_ROOT/test/scripts:$PATH"
+    PATH="$PROJECT_ROOT/test:$PATH"
 
-    export MANIFEST_PATH=$PROJECT_ROOT/test/scripts/manifest
+    export MANIFEST_PATH=$PROJECT_ROOT/test/manifest
     export CAP_NAME="test-export"
 
     if [[ $(kubectl create ns $NAMESPACE | grep -i "already exist") != "" ]]

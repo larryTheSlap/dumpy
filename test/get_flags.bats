@@ -1,9 +1,10 @@
 setup_file() {  
     PROJECT_ROOT="$( cd "$( dirname "$BATS_TEST_FILENAME" )/.." >/dev/null 2>&1 && pwd )"
-    PATH="$PROJECT_ROOT/test/scripts:$PATH"
+    PATH="$PROJECT_ROOT/test:$PATH"
 
-    export MANIFEST_PATH=$PROJECT_ROOT/test/scripts/manifest
+    export MANIFEST_PATH=$PROJECT_ROOT/test/manifest
     export CAP_NAME="test-get"
+    export IMG_VER="0.2.0"
 
     if [[ $(kubectl create ns $NAMESPACE | grep -i "already exist") != "" ]]
     then
@@ -37,7 +38,7 @@ Getting capture details..
 name: ${CAP_NAME}-pod
 namespace: test-ns
 tcpdumpfilters: -i any
-image: larrytheslap/dumpy:0.2.0
+image: larrytheslap/dumpy:${IMG_VER}
 targetSpec:
     name: test-pod
     namespace: test-ns
