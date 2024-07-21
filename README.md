@@ -2,7 +2,7 @@
 
 # Dumpy - Kubernetes Network Traffic Capture Plugin
 
-Dumpy is an advanced kubectl plugin designed for Kubernetes administrators, providing seamless network traffic capture from various resources. It excels in isolating captures to specific pod containers or nodes, ensuring security and accurate analysis. Dumpy dynamically creates dedicated sniffers that will run tcpdump for each target.
+Dumpy is an advanced kubectl plugin designed for Kubernetes administrators, providing seamless network traffic capture using tcpdump from various resources. It excels in isolating captures to specific pod containers or nodes, ensuring security and accurate analysis. Dumpy dynamically creates dedicated sniffers that run tcpdump for each target.
 
 
 - [Features](#features)
