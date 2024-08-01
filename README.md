@@ -45,7 +45,7 @@ kubectl krew install dumpy
 Download the right [release](https://github.com/larryTheSlap/dumpy/releases) for your OS  , unzip it then move the `kubectl-dumpy` binary where kubectl is located.
 - linux install:
 ```bash
-curl -L -O https://github.com/larryTheSlap/dumpy/releases/download/v0.1.0/dumpy_Linux_x86_64.tar.gz
+curl -L -O https://github.com/larryTheSlap/dumpy/releases/download/v0.2.0/dumpy_Linux_x86_64.tar.gz
 tar xf dumpy_Linux_x86_64.tar.gz 
 chmod +x kubectl-dumpy && sudo mv kubectl-dumpy /usr/bin/kubectl-dumpy
 ```
