@@ -44,7 +44,17 @@ else
             TARGET_PID=$(nsenter -t 1 -m -n $BINPATH  inspect $TARGET_CONTAINERID | jq .[0].State.Pid)
         elif [[ $BIN == "ctr" ]]
         then
-            TARGET_PID=$(nsenter -t 1 -m -n $BINPATH container info $TARGET_CONTAINERID --format=json | jq -r '.info.State.Pid')
+            # GET CONTAINER NAMESPACES
+            NAMESPACES=$(nsenter -t 1 -m -n /usr/bin/ctr ns ls -q)
+            [ -z "$NAMESPACES" ] && NAMESPACES="default"
+            # SCAN EVERY NAMESPACE FOR TARGET CONTAINER
+            for NAMESPACE in $NAMESPACES ; do
+                TARGET_PID=$(nsenter -t 1 -m -n $BINPATH -n "$NAMESPACE" task ls | awk "/$TARGET_CONTAINERID/ { print \$2 }")
+                if [[ "$TARGET_PID" =~ ^[0-9]+$ ]] ; then
+                    echo "$LOG_INFO target container PID : $TARGET_PID"
+                    break 2
+                fi
+            done
         fi
 
         if [[ "$TARGET_PID" =~ ^[0-9]+$ ]]
