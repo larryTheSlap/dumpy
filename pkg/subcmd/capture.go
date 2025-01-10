@@ -68,7 +68,7 @@ func Dumpysubcmd_capture() (cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&dumpy.DumpFilters, "filter", "f", "-i any", "tcpdump filters/arguments")
 	cmd.Flags().StringVarP(&dumpy.PvcName, "pvc", "v", "", "pvc name for dumpy sniffers to store network captures")
 	cmd.Flags().StringVarP(&dumpy.PullSecret, "secret", "s", "", "dumpy sniffer image pull secret")
-	cmd.Flags().StringVarP(&dumpy.Image, "image", "i", "larrytheslap/dumpy:0.2.0", "dumpy sniffer docker image")
+	cmd.Flags().StringVarP(&dumpy.Image, "image", "i", "larrytheslap/dumpy:latest", "dumpy sniffer docker image")
 
 	return
 }
