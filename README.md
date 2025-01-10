@@ -45,7 +45,7 @@ kubectl krew install dumpy
 Download the right [release](https://github.com/larryTheSlap/dumpy/releases) for your OS  , unzip it then move the `kubectl-dumpy` binary where kubectl is located.
 - linux install:
 ```bash
-curl -L -O https://github.com/larryTheSlap/dumpy/releases/download/v0.2.0/dumpy_Linux_x86_64.tar.gz
+curl -L -O https://github.com/larryTheSlap/dumpy/releases/download/v0.2.1/dumpy_Linux_x86_64.tar.gz
 tar xf dumpy_Linux_x86_64.tar.gz 
 chmod +x kubectl-dumpy && sudo mv kubectl-dumpy /usr/bin/kubectl-dumpy
 ```
@@ -59,7 +59,7 @@ kubectl dumpy capture <pod|deployment|replicaset|daemonset|statefulset|node> <re
   -f <tcpdumpFilters>        \ # Tcpdump filters for capture                               (default: "-i any")
   -c <containerName>         \ # Specific target container for multi-container pods        (default: Main container)
   -v <pvcName>               \ # PVC name that sniffers mount to store tcpdump captures, RWX PVC for mutli-pod
-  -i <dumpyImage>            \ # Dumpy docker image for private clusters                   (default: larrytheslap/dumpy:0.2.0) 
+  -i <dumpyImage>            \ # Dumpy docker image for private clusters                   (default: larrytheslap/dumpy:latest) 
   -s <imagePullSecret>       \ # Image pull secret name for private clusters to pull dumpy image
   --name <captureName>       \ # Set specific capture name, if not set dumpy generates it  (default: dumpy-<ID>) 
 
@@ -144,7 +144,7 @@ Getting capture details..
 name: dumpy-80508655
 namespace: foo-ns
 tcpdumpfilters: -i any port 443
-image: larrytheslap/dumpy:0.2.0
+image: larrytheslap/dumpy:latest
 targetSpec:
     name: bar-deploy
     namespace: foo-ns
