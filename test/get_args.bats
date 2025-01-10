@@ -4,7 +4,7 @@ setup_file() {
 
     export MANIFEST_PATH=$PROJECT_ROOT/test/manifest
     export CAP_NAME="test-get"
-    export IMG_VER="0.2.0"
+    export IMG_VER="latest"
 
     kubectl apply -f $MANIFEST_PATH/pod_currNS.yml
     kubectl apply -f $MANIFEST_PATH/deploy_currNS.yml
