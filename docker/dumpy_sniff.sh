@@ -39,7 +39,20 @@ else
         if [[ $BIN == "crictl" ]]
         then
             TARGET_PID=$(nsenter -t 1 -m -n $BINPATH inspect $TARGET_CONTAINERID | jq .info.pid)
-        elif [[ $BIN == "nerdctl" || $BIN == "docker" ]]
+        elif [[ $BIN == "nerdctl" ]]
+        then
+            # GET CONTAINER NAMESPACES
+            NAMESPACES=$(nsenter -t 1 -m -n /usr/bin/nerdctl ns ls -q)
+            [ -z "$NAMESPACES" ] && NAMESPACES="default"
+            # SCAN EVERY NAMESPACE FOR TARGET CONTAINER
+            for NAMESPACE in $NAMESPACES ; do
+                TARGET_PID=$(nsenter -t 1 -m -n $BINPATH -n "$NAMESPACE" inspect $TARGET_CONTAINERID | jq .[0].State.Pid)
+                if [[ "$TARGET_PID" =~ ^[0-9]+$ ]] ; then
+                    echo "$LOG_INFO target container PID : $TARGET_PID"
+                    break 2
+                fi
+            done
+        elif [[ $BIN == "docker" ]]
         then
             TARGET_PID=$(nsenter -t 1 -m -n $BINPATH  inspect $TARGET_CONTAINERID | jq .[0].State.Pid)
         elif [[ $BIN == "ctr" ]]
